@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sudoku | Joan Sebastian Garcia Orozco</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f2f2f2;
+            color: #222;
+        }
+
+        header {
+            background: #8b1e2d;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+        }
+
+        .contenedor {
+            max-width: 850px;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .instrucciones {
+            background: #f7eeee;
+            border-left: 5px solid #8b1e2d;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+
+        .instrucciones h2 {
+            margin-top: 0;
+            color: #8b1e2d;
+        }
+
+        #sudoku {
+            border-collapse: collapse;
+            margin: 25px auto;
+            border: 4px solid #222;
+        }
+
+        #sudoku td {
+            width: 52px;
+            height: 52px;
+            border: 1px solid #999;
+            text-align: center;
+        }
+
+        #sudoku input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            text-align: center;
+            font-size: 22px;
+            outline: none;
+            background: white;
+        }
+
+        #sudoku input:disabled {
+            background: #eeeeee;
+            color: #111;
+            font-weight: bold;
+            opacity: 1;
+        }
+
+        /* Líneas gruesas de los bloques 3x3 */
+        #sudoku td:nth-child(3),
+        #sudoku td:nth-child(6) {
+            border-right: 3px solid #222;
+        }
+
+        #sudoku tr:nth-child(3) td,
+        #sudoku tr:nth-child(6) td {
+            border-bottom: 3px solid #222;
+        }
+
+        .botones {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 22px;
+            margin: 5px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .resolver {
+            background: #8b1e2d;
+            color: white;
+        }
+
+        .reiniciar {
+            background: #333;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        #mensaje {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 18px;
+            min-height: 24px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .contenedor {
+                margin: 10px;
+                padding: 15px;
+            }
+
+            #sudoku td {
+                width: 36px;
+                height: 36px;
+            }
+
+            #sudoku input {
+                font-size: 17px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>RESOLVEDOR DE SUDOKU</h1>
+    <p>Joan Sebastian Garcia Orozco</p>
+</header>
+
+<div class="contenedor">
+
+    <div class="instrucciones">
+        <h2>Instrucciones</h2>
+
+        <p>
+            El Sudoku proporcionado en el examen aparece cargado
+            automáticamente.
+        </p>
+
+        <p>
+            Presiona <strong>Resolver Sudoku</strong> para que el programa
+            encuentre la solución automáticamente.
+        </p>
+
+        <p>
+            Puedes utilizar <strong>Reiniciar</strong> para regresar
+            al Sudoku original.
+        </p>
+    </div>
+
+    <h2 style="text-align:center;">Sudoku del examen</h2>
+
+    <table id="sudoku"></table>
+
+    <div class="botones">
+        <button class="resolver" onclick="resolver()">
+            Resolver Sudoku
+        </button>
+
+        <button class="reiniciar" onclick="reiniciar()">
+            Reiniciar
+        </button>
+    </div>
+
+    <div id="mensaje"></div>
+
+    <footer>
+        Universidad Autónoma de Durango - Lobos Alamedas
+        <br>
+        Proyecto de examen
+    </footer>
+
+</div>
+
+
+<script>
+
+    // Sudoku original del examen
+    const original = [
+        [5,3,0,0,7,0,0,0,0],
+        [6,0,0,1,9,5,0,0,0],
+        [0,9,8,0,0,0,0,6,0],
+        [8,0,0,0,6,0,0,0,3],
+        [4,0,0,8,0,3,0,0,1],
+        [7,0,0,0,2,0,0,0,6],
+        [0,6,0,0,0,0,2,8,0],
+        [0,0,0,4,1,9,0,0,5],
+        [0,0,0,0,8,0,0,7,9]
+    ];
+
+
+    // Crear visualmente el tablero
+    function crearTablero() {
+
+        const tabla = document.getElementById("sudoku");
+
+        tabla.innerHTML = "";
+
+        for (let fila = 0; fila < 9; fila++) {
+
+            const tr = document.createElement("tr");
+
+            for (let columna = 0; columna < 9; columna++) {
+
+                const td = document.createElement("td");
+                const input = document.createElement("input");
+
+                input.type = "text";
+                input.maxLength = 1;
+
+                if (original[fila][columna] !== 0) {
+
+                    input.value = original[fila][columna];
+
+                    // Evita modificar los números originales
+                    input.disabled = true;
+
+                } else {
+
+                    // Solo permite números del 1 al 9
+                    input.addEventListener("input", function() {
+
+                        this.value =
+                            this.value.replace(/[^1-9]/g, "");
+
+                    });
+
+                }
+
+                td.appendChild(input);
+                tr.appendChild(td);
+            }
+
+            tabla.appendChild(tr);
+        }
+    }
+
+
+    // Obtener números del tablero
+    function obtenerTablero() {
+
+        const inputs =
+            document.querySelectorAll("#sudoku input");
+
+        let tablero = [];
+        let posicion = 0;
+
+        for (let fila = 0; fila < 9; fila++) {
+
+            tablero[fila] = [];
+
+            for (let columna = 0; columna < 9; columna++) {
+
+                const valor =
+                    parseInt(inputs[posicion].value);
+
+                tablero[fila][columna] =
+                    isNaN(valor) ? 0 : valor;
+
+                posicion++;
+            }
+        }
+
+        return tablero;
+    }
+
+
+    // Buscar una casilla vacía
+    function buscarVacio(tablero) {
+
+        for (let fila = 0; fila < 9; fila++) {
+
+            for (let columna = 0; columna < 9; columna++) {
+
+                if (tablero[fila][columna] === 0) {
+
+                    return [fila, columna];
+
+                }
+            }
+        }
+
+        return null;
+    }
+
+
+    // Comprobar si el número es válido
+    function numeroValido(tablero, numero, fila, columna) {
+
+        // Revisar fila
+        for (let i = 0; i < 9; i++) {
+
+            if (tablero[fila][i] === numero) {
+                return false;
+            }
+        }
+
+
+        // Revisar columna
+        for (let i = 0; i < 9; i++) {
+
+            if (tablero[i][columna] === numero) {
+                return false;
+            }
+        }
+
+
+        // Revisar bloque 3x3
+        const inicioFila =
+            Math.floor(fila / 3) * 3;
+
+        const inicioColumna =
+            Math.floor(columna / 3) * 3;
+
+
+        for (let i = inicioFila;
+             i < inicioFila + 3;
+             i++) {
+
+            for (let j = inicioColumna;
+                 j < inicioColumna + 3;
+                 j++) {
+
+                if (tablero[i][j] === numero) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+
+    // Algoritmo Backtracking
+    function resolverBacktracking(tablero) {
+
+        const vacio = buscarVacio(tablero);
+
+        if (vacio === null) {
+            return true;
+        }
+
+        const fila = vacio[0];
+        const columna = vacio[1];
+
+
+        for (let numero = 1;
+             numero <= 9;
+             numero++) {
+
+            if (
+                numeroValido(
+                    tablero,
+                    numero,
+                    fila,
+                    columna
+                )
+            ) {
+
+                tablero[fila][columna] = numero;
+
+
+                if (resolverBacktracking(tablero)) {
+
+                    return true;
+
+                }
+
+
+                // Retroceder
+                tablero[fila][columna] = 0;
+            }
+        }
+
+        return false;
+    }
+
+
+    // Botón Resolver
+    function resolver() {
+
+        const tablero = obtenerTablero();
+
+        const mensaje =
+            document.getElementById("mensaje");
+
+
+        if (resolverBacktracking(tablero)) {
+
+            const inputs =
+                document.querySelectorAll("#sudoku input");
+
+            let posicion = 0;
+
+
+            for (let fila = 0;
+                 fila < 9;
+                 fila++) {
+
+                for (let columna = 0;
+                     columna < 9;
+                     columna++) {
+
+                    inputs[posicion].value =
+                        tablero[fila][columna];
+
+                    posicion++;
+                }
+            }
+
+
+            mensaje.textContent =
+                "✓ Sudoku resuelto correctamente.";
+
+        } else {
+
+            mensaje.textContent =
+                "No se encontró una solución.";
+        }
+    }
+
+
+    // Reiniciar tablero
+    function reiniciar() {
+
+        crearTablero();
+
+        document.getElementById("mensaje")
+            .textContent = "";
+    }
+
+
+    // Crear Sudoku al abrir la página
+    crearTablero();
+
+</script>
+
+</body>
+</html>
